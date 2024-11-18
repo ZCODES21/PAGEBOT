@@ -95,7 +95,7 @@ module.exports = {
 			);
 			
 			const responseURL = fontChanger(result);
-			const output = responseURL.replace(/\*/g, '•');
+			const output = responseURL.replace(/\*/g, '');
 
 			sendMessage(
 				senderId,
