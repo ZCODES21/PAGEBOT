@@ -93,11 +93,14 @@ module.exports = {
 					userInput,
 				)}&uid=${senderId}`,
 			);
+			
+			const responseURL = fontChanger(result);
+			const output = responseURL.replace(/\*/g, '•');
 
 			sendMessage(
 				senderId,
 				{
-					text: fontChanger(result),
+					text: output,
 				},
 				pageAccessToken,
 			);
