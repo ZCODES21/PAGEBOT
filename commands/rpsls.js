@@ -3,7 +3,7 @@ const axios = require('axios');
 module.exports = {
 	name: 'rpsls',
 	description: 'Play rock, paper, scissors, lizard and spock with me.',
-	usage: 'tracks [song title]',
+	usage: 'rpsls [rock, paper, scissors, lizard and spock]',
 	author: 'Xao',
 	async execute(senderId, args, pageAccessToken, sendMessage) {
 		let query = args.join(' ');
@@ -31,7 +31,8 @@ module.exports = {
 			let globalStatsComputerWins = stats.computerWins;
 			let globalStatsTies = stats.ties;
 
-			let messageFormat = `-- RPSLS GAME RESULT --
+			let messageFormat = `
+			-- RPSLS GAME RESULT --
 			PLAYER CHOICE: ${query}
 			COMPUTER CHOICE: ${computerChoice}
 			RESULT: ${message}
