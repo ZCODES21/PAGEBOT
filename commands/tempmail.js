@@ -5,10 +5,6 @@ const domains = [
 	'1secmail.com',
 	'1secmail.org',
 	'1secmail.net',
-	'wwjmp.com',
-	'esiix.com',
-	'xojxe.com',
-	'yoggm.com',
 ];
 
 // Store emails and their last message IDs
