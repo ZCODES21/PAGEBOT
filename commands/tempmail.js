@@ -18,7 +18,7 @@ module.exports = {
 	name: 'secmail',
 	description:
 		'Generate temporary email and check message inbox using secmail API. Automatically notifies of new emails.',
-	usage: 'secmail [gen | inbox <email> | auto <email>]',
+	usage: 'secmail [gen | inbox <email> | stop <email>]',
 	author: 'Xao',
 
 	async execute(senderId, args, pageAccessToken, sendMessage) {
@@ -36,44 +36,33 @@ module.exports = {
 				},
 				pageAccessToken,
 			);
-			// Initialize email data for auto-check
-			emailData[senderId] = {
-				email: generatedEmail,
-				lastMessageId: null,
-				interval: null,
-			};
-			return;
-		}
 
-		if (cmd === 'inbox' && email && domains.some(d => email.endsWith(`@${d}`))) {
-			await this.checkInbox(senderId, email, pageAccessToken, sendMessage);
-			return;
-		}
-
-		if (cmd === 'auto' && email && domains.some(d => email.endsWith(`@${d}`))) {
-			if (emailData[senderId] && emailData[senderId].interval) {
-				clearInterval(emailData[senderId].interval);
-				sendMessage(
-					senderId,
-					{ text: `Auto-check stopped for ${emailData[senderId].email}.` },
-					pageAccessToken,
-				);
-			}
-			emailData[senderId] = {
-				email: email,
-				lastMessageId: null,
-				interval: null,
-			};
-
-			sendMessage(
+			// Start auto-check for generated email
+			this.startAutoCheck(
 				senderId,
-				{ text: `Starting auto-check for ${email}...` },
+				generatedEmail,
 				pageAccessToken,
+				sendMessage,
 			);
+			return;
+		}
 
-			emailData[senderId].interval = setInterval(async () => {
-				await this.checkInbox(senderId, email, pageAccessToken, sendMessage, true);
-			}, 15000); // Check every 15 seconds
+		if (
+			cmd === 'inbox' &&
+			email &&
+			domains.some(d => email.endsWith(`@${d}`))
+		) {
+			await this.checkInbox(
+				senderId,
+				email,
+				pageAccessToken,
+				sendMessage,
+			);
+			return;
+		}
+
+		if (cmd === 'stop' && email) {
+			this.stopAutoCheck(senderId, email, pageAccessToken, sendMessage);
 			return;
 		}
 
@@ -86,7 +75,13 @@ module.exports = {
 		);
 	},
 
-	async checkInbox(senderId, email, pageAccessToken, sendMessage, isAuto = false) {
+	async checkInbox(
+		senderId,
+		email,
+		pageAccessToken,
+		sendMessage,
+		isAuto = false,
+	) {
 		try {
 			const [username, domain] = email.split('@');
 			const inbox = (
@@ -112,9 +107,13 @@ module.exports = {
 			const latestMessage = inbox[0];
 			const { id, from, subject, date } = latestMessage;
 
-			if (emailData[senderId] && id === emailData[senderId].lastMessageId) {
+			if (
+				emailData[senderId] &&
+				emailData[senderId].lastMessageId === id
+			) {
 				return; // No new messages
 			}
+
 			if (emailData[senderId]) {
 				emailData[senderId].lastMessageId = id;
 			}
@@ -141,6 +140,60 @@ module.exports = {
 					pageAccessToken,
 				);
 			}
+		}
+	},
+
+	startAutoCheck(senderId, email, pageAccessToken, sendMessage) {
+		// Clear existing interval if any
+		this.stopAutoCheck(
+			senderId,
+			email,
+			pageAccessToken,
+			sendMessage,
+			false,
+		);
+
+		// Initialize email data for auto-check
+		emailData[senderId] = {
+			email: email,
+			lastMessageId: null,
+			interval: null,
+		};
+
+		// Start the interval
+		emailData[senderId].interval = setInterval(async () => {
+			await this.checkInbox(
+				senderId,
+				email,
+				pageAccessToken,
+				sendMessage,
+				true,
+			);
+		}, 15000); // Check every 15 seconds
+	},
+	stopAutoCheck(
+		senderId,
+		email,
+		pageAccessToken,
+		sendMessage,
+		sendMsg = true,
+	) {
+		if (emailData[senderId] && emailData[senderId].interval) {
+			clearInterval(emailData[senderId].interval);
+			emailData[senderId].interval = null;
+			if (sendMsg) {
+				sendMessage(
+					senderId,
+					{ text: `Auto-check stopped for ${email}.` },
+					pageAccessToken,
+				);
+			}
+		} else if (sendMsg) {
+			sendMessage(
+				senderId,
+				{ text: `No auto-check is running for ${email}.` },
+				pageAccessToken,
+			);
 		}
 	},
 };
