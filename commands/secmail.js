@@ -42,7 +42,6 @@ module.exports = {
 			cmd === 'inbox'
 		) {
 			await this.checkInbox(
-				senderId,
 				emailData[senderId],
 				pageAccessToken,
 				sendMessage,
@@ -65,8 +64,7 @@ module.exports = {
 	},
 
 	async checkInbox(
-		senderId,
-		email,
+		emailData[senderId],
 		pageAccessToken,
 		sendMessage,
 		isAuto = false,
