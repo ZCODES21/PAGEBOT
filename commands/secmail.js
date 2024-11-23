@@ -44,21 +44,16 @@ let emailData = {};
 
 // Function to load data from JSON file
 async function loadData() {
-	try {
-		const data = await fs.readFile(XAO_FILE, 'utf8');
-		const parsedData = JSON.parse(data);
-		userEmails = parsedData.userEmails || {};
-		emailData = parsedData.emailData || {};
-	} catch (error) {
-		if (error.code === 'ENOENT') {
-			console.log('Data file not found, starting with empty data.');
-			userEmails = {};
-			emailData = {};
-		} else {
-			console.error('Error loading data from file:', error);
-			userEmails = {};
-			emailData = {};
+	if (fs.existsSync(XAO_FILE)) {
+		try {
+			return JSON.parse(fs.readFileSync(XAO_FILE, 'utf8'));
+		} catch (error) {
+			console.error('Error parsing XAO_FILE:', error);
+			return {}; // Return empty object on parsing error
 		}
+	} else {
+		// Create initial data if file doesn't exist. Crucial!
+		return {};
 	}
 }
 
