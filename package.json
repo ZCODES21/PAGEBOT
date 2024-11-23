@@ -28,6 +28,6 @@
 		"fs": "latest"
 	},
 	"engines": {
-		"node": "latest"
+		"node": "20.x"
 	}
 }
