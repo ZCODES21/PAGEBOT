@@ -5,12 +5,38 @@ const path = require('path');
 const domains = ['rteet.com', '1secmail.com', '1secmail.org', '1secmail.net'];
 
 // const dataFilePath = 'secmailData.json'; // Path to the JSON data file
-const dataFilePath = path.join(__dirname, '../data/secmailData.json');
+const XAO_FILE = path.join(__dirname, '../data/secmailData.json');
 // Create the directory if it doesn't exist
-const dir = path.dirname(dataFilePath);
+const dir = path.dirname(XAO_FILE);
 if (!fs.existsSync(dir)) {
 	fs.mkdirSync(dir, { recursive: true });
 }
+
+const XAO_LOAD = () => {
+	if (fs.existsSync(XAO_FILE)) {
+		try {
+			return JSON.parse(fs.readFileSync(XAO_FILE, 'utf8'));
+		} catch (error) {
+			console.error('Error parsing XAO_FILE:', error);
+			return {}; // Return empty object on parsing error
+		}
+	} else {
+		// Create initial data if file doesn't exist. Crucial!
+		return {};
+	}
+};
+
+const SAVED_XAO = saveEmails => {
+	try {
+		fs.writeFileSync(
+			XAO_FILE,
+			JSON.stringify(saveEmails({ userEmails, emailData }), null, 2),
+			'utf8',
+		);
+	} catch (error) {
+		console.error('Error writing to XAO_FILE:', error);
+	}
+};
 
 // Data objects to be stored in JSON
 let userEmails = {};
@@ -36,26 +62,28 @@ async function loadData() {
 	}
 }
 
+const getEmails = XAO_LOAD();
+
 // Function to save data to JSON file
-async function saveData() {
-	try {
-		const data = JSON.stringify({ userEmails, emailData }, null, 2);
-		await fs.writeFile(dataFilePath, data, 'utf8');
-	} catch (error) {
-		console.error('Error saving data to file:', error);
-	}
-}
+// async function SAVED_XAO(savedEmails) {
+//	try {
+// const data = JSON.stringify({ userEmails, emailData }, null, 2);
+// await fs.writeFile(dataFilePath, data, 'utf8');
+//	} catch (error) {
+//		console.error('Error saving data to file:', error);
+//	}
+//}
 
 // Load data on startup
-loadData();
+getEmails();
 
 // Save data before exit
 process.on('exit', () => {
-	saveData().then(() => console.log('Data saved on exit.'));
+	SAVED_XAO(savedEmails).then(() => console.log('Data saved on exit.'));
 });
 
 process.on('SIGINT', async () => {
-	await saveData();
+	await SAVED_XAO(savedEmails);
 	console.log('Data saved on SIGINT. Exiting...');
 	process.exit(0);
 });
@@ -64,7 +92,7 @@ module.exports = {
 	name: 'secmail',
 	description:
 		'Generate temporary email and view message history. Automatically notifies of new emails.',
-	usage: 'secmail [gen | history <email> | previous | stop <email>]',
+	usage: 'secmail [ gen | inbox <email> | stop <email> ]',
 	author: 'Xao',
 
 	async execute(senderId, args, pageAccessToken, sendMessage) {
@@ -88,7 +116,7 @@ module.exports = {
 				userEmails[senderId] = [];
 			}
 			userEmails[senderId].push(generatedEmail);
-			await saveData();
+			await SAVED_XAO(savedEmails);
 
 			// Start auto-check for generated email
 			this.startAutoCheck(
@@ -100,7 +128,7 @@ module.exports = {
 			return;
 		}
 
-		if (cmd === 'history' && email) {
+		if (cmd === 'inbox' && email) {
 			await this.viewEmailHistory(
 				senderId,
 				email,
@@ -246,8 +274,8 @@ module.exports = {
 			inbox.sort((a, b) => new Date(b.date) - new Date(a.date));
 
 			// Initialize message history for the email if not already present
-			if (!userEmails[senderId]) {
-				userEmails[senderId] = {
+			if (!emailData[senderId]) {
+				emailData[senderId] = {
 					email: email,
 					messages: [],
 					lastMessageId: null,
@@ -259,7 +287,7 @@ module.exports = {
 				const { id, from, subject, date } = message;
 
 				// Check if message is already in history
-				if (userEmails[senderId].messages.some(msg => msg.id === id)) {
+				if (emailData[senderId].messages.some(msg => msg.id === id)) {
 					continue; // Skip if already processed
 				}
 
@@ -270,7 +298,7 @@ module.exports = {
 				).data;
 
 				// Store message in history
-				userEmails[senderId].messages.push({
+				emailData[senderId].messages.push({
 					id,
 					from,
 					subject,
@@ -279,8 +307,8 @@ module.exports = {
 				});
 
 				// Keep only the last 5 messages
-				userEmails[senderId].messages =
-					userEmails[senderId].messages.slice(-5);
+				emailData[senderId].messages =
+					emailData[senderId].messages.slice(-5);
 
 				if (isAuto) {
 					sendMessage(
@@ -292,9 +320,9 @@ module.exports = {
 					);
 				}
 
-				userEmails[senderId].lastMessageId = id;
+				emailData[senderId].lastMessageId = id;
 			}
-			await saveData(); // Save after updating messages
+			await SAVED_XAO(savedEmails); // Save after updating messages
 		} catch (error) {
 			console.error('Error in checkInbox:', error);
 			if (!isAuto) {
@@ -318,20 +346,20 @@ module.exports = {
 		);
 
 		// Initialize email data for auto-check if not already initialized
-		if (!userEmails[senderId]) {
-			userEmails[senderId] = {
+		if (!emailData[senderId]) {
+			emailData[senderId] = {
 				email: email,
 				messages: [],
 				lastMessageId: null,
 				interval: null,
 			};
 		} else {
-			userEmails[senderId].interval = null; // Ensure interval is cleared
+			emailData[senderId].interval = null; // Ensure interval is cleared
 		}
-		userEmails[senderId].email = email;
+		emailData[senderId].email = email;
 
 		// Start the interval
-		userEmails[senderId].interval = setInterval(async () => {
+		emailData[senderId].interval = setInterval(async () => {
 			await this.checkInbox(
 				senderId,
 				email,
@@ -348,9 +376,9 @@ module.exports = {
 		sendMessage,
 		sendMsg = true,
 	) {
-		if (userEmails[senderId] && userEmails[senderId].interval) {
-			clearInterval(userEmails[senderId].interval);
-			userEmails[senderId].interval = null;
+		if (emailData[senderId] && emailData[senderId].interval) {
+			clearInterval(emailData[senderId].interval);
+			emailData[senderId].interval = null;
 			if (sendMsg) {
 				sendMessage(
 					senderId,
