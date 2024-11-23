@@ -12,32 +12,6 @@ if (!fs.existsSync(dir)) {
 	fs.mkdirSync(dir, { recursive: true });
 }
 
-const XAO_LOAD = () => {
-	if (fs.existsSync(XAO_FILE)) {
-		try {
-			return JSON.parse(fs.readFileSync(XAO_FILE, 'utf8'));
-		} catch (error) {
-			console.error('Error parsing XAO_FILE:', error);
-			return {}; // Return empty object on parsing error
-		}
-	} else {
-		// Create initial data if file doesn't exist. Crucial!
-		return {};
-	}
-};
-
-const SAVED_XAO = saveEmails => {
-	try {
-		fs.writeFileSync(
-			XAO_FILE,
-			JSON.stringify(saveEmails({ userEmails, emailData }), null, 2),
-			'utf8',
-		);
-	} catch (error) {
-		console.error('Error writing to XAO_FILE:', error);
-	}
-};
-
 // Data objects to be stored in JSON
 let userEmails = {};
 let emailData = {};
@@ -58,25 +32,25 @@ async function loadData() {
 }
 
 // Function to save data to JSON file
-// async function SAVED_XAO(savedEmails) {
-//	try {
-// const data = JSON.stringify({ userEmails, emailData }, null, 2);
-// await fs.writeFile(XAO_FILE, data, 'utf8');
-//	} catch (error) {
-//		console.error('Error saving data to file:', error);
-//	}
-//}
+async function savedData() {
+	try {
+		const data = JSON.stringify({ userEmails, emailData }, null, 2);
+		await fs.writeFile(XAO_FILE, data, 'utf8');
+	} catch (error) {
+		console.error('Error saving data to file:', error);
+	}
+}
 
 // Load data on startup
 loadData();
 
 // Save data before exit
 process.on('exit', () => {
-	SAVED_XAO(savedEmails).then(() => console.log('Data saved on exit.'));
+	savedData().then(() => console.log('Data saved on exit.'));
 });
 
 process.on('SIGINT', async () => {
-	await SAVED_XAO(savedEmails);
+	await savedData();
 	console.log('Data saved on SIGINT. Exiting...');
 	process.exit(0);
 });
@@ -109,7 +83,7 @@ module.exports = {
 				userEmails[senderId] = [];
 			}
 			userEmails[senderId].push(generatedEmail);
-			await SAVED_XAO(savedEmails);
+			await savedData();
 
 			// Start auto-check for generated email
 			this.startAutoCheck(
@@ -225,7 +199,7 @@ module.exports = {
 			return;
 		}
 
-		let historyMessage = `📧 | MESSAGE HISTORY FOR ${email}:\n\n`;
+		let historyMessage = `MESSAGE HISTORY:\n» ${email}:\n\n`;
 		history.forEach((message, index) => {
 			historyMessage += `${index + 1}. From: ${
 				message.from
@@ -315,7 +289,7 @@ module.exports = {
 
 				emailData[senderId].lastMessageId = id;
 			}
-			await SAVED_XAO(savedEmails); // Save after updating messages
+			await savedData(); // Save after updating messages
 		} catch (error) {
 			console.error('Error in checkInbox:', error);
 			if (!isAuto) {
