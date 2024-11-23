@@ -129,8 +129,60 @@ module.exports = {
 		);
 	},
 
+	showPreviousEmails(senderId, pageAccessToken, sendMessage) {
+		const emails = userEmails[senderId] || [];
+
+		if (emails.length === 0) {
+			sendMessage(
+				senderId,
+				{ text: 'No previous emails generated.' },
+				pageAccessToken,
+			);
+			return;
+		}
+
+		const emailList = emails
+			.map((email, index) => `${index + 1}. ${email}`)
+			.join('\n');
+
+		sendMessage(
+			senderId,
+			{
+				text: `Select an email to view history (enter the number):\n${emailList}`,
+			},
+			pageAccessToken,
+		);
+
+		// Get user input for email selection
+		process.stdin.once('data', async data => {
+			// Use process.stdin for input
+			const choice = parseInt(data.toString().trim()) - 1;
+
+			if (isNaN(choice) || choice < 0 || choice >= emails.length) {
+				sendMessage(
+					senderId,
+					{ text: 'Invalid choice.' },
+					pageAccessToken,
+				);
+				return;
+			}
+
+			const selectedEmail = emails[choice];
+			await this.viewEmailHistory(
+				senderId,
+				selectedEmail,
+				pageAccessToken,
+				sendMessage,
+			);
+		});
+	},
+
 	async viewEmailHistory(senderId, email, pageAccessToken, sendMessage) {
-		if (!emailData[senderId] || emailData[senderId].email !== email) {
+		if (
+			!emailData[senderId] ||
+			!emailData[senderId].messages ||
+			!emailData[senderId].messages.find(msg => msg.email === email)
+		) {
 			sendMessage(
 				senderId,
 				{ text: 'Email not found in history or no history available.' },
@@ -139,7 +191,9 @@ module.exports = {
 			return;
 		}
 
-		const history = emailData[senderId].messages || [];
+		const history =
+			emailData[senderId].messages.filter(msg => msg.email === email) ||
+			[]; // filter message by selected email
 
 		if (!history.length) {
 			sendMessage(
@@ -150,10 +204,8 @@ module.exports = {
 			return;
 		}
 
-		let historyMessage = `📧 | LAST 5 MESSAGES FOR ${email}:\n\n`;
-		// Display only the last 5 messages
-		const lastFiveMessages = history.slice(-5);
-		lastFiveMessages.forEach((message, index) => {
+		let historyMessage = `📧 | MESSAGE HISTORY FOR ${email}:\n\n`;
+		history.forEach((message, index) => {
 			historyMessage += `${index + 1}. From: ${
 				message.from
 			}\n   Subject: ${message.subject}\n   Date: ${
@@ -313,27 +365,5 @@ module.exports = {
 				pageAccessToken,
 			);
 		}
-	},
-
-	showPreviousEmails(senderId, pageAccessToken, sendMessage) {
-		if (!userEmails[senderId] || userEmails[senderId].length === 0) {
-			sendMessage(
-				senderId,
-				{ text: 'No previous emails generated.' },
-				pageAccessToken,
-			);
-			return;
-		}
-
-		const previousEmails = userEmails[senderId]
-			.map((email, index) => `${index + 1}. ${email}`)
-			.join('\n');
-		sendMessage(
-			senderId,
-			{
-				text: `Previous emails:\n${previousEmails}`,
-			},
-			pageAccessToken,
-		);
 	},
 };
