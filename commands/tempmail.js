@@ -1,5 +1,5 @@
 const axios = require('axios');
-const fs = require('fs').promises; // Using fs.promises for async file operations
+const fs = require('fs'); // Using fs.promises for async file operations
 const path = require('path');
 
 const domains = ['rteet.com', '1secmail.com', '1secmail.org', '1secmail.net'];
