@@ -62,8 +62,6 @@ async function loadData() {
 	}
 }
 
-const getEmails = XAO_LOAD();
-
 // Function to save data to JSON file
 // async function SAVED_XAO(savedEmails) {
 //	try {
@@ -75,7 +73,7 @@ const getEmails = XAO_LOAD();
 //}
 
 // Load data on startup
-getEmails();
+loadData();
 
 // Save data before exit
 process.on('exit', () => {
