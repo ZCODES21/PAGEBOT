@@ -167,7 +167,7 @@ module.exports = {
 				return;
 			}
 
-			const selectedEmail = emails[choice];
+			const selectedEmail = emails[email];
 			await this.viewEmailHistory(
 				senderId,
 				selectedEmail,
@@ -179,9 +179,9 @@ module.exports = {
 
 	async viewEmailHistory(senderId, email, pageAccessToken, sendMessage) {
 		if (
-			!emailData[senderId] ||
-			!emailData[senderId].messages ||
-			!emailData[senderId].messages.find(msg => msg.email === email)
+			!userEmails[senderId] ||
+			!userEmails[senderId].messages ||
+			!userEmails[senderId].messages.find(msg => msg.email === email)
 		) {
 			sendMessage(
 				senderId,
@@ -192,7 +192,7 @@ module.exports = {
 		}
 
 		const history =
-			emailData[senderId].messages.filter(msg => msg.email === email) ||
+			userEmails[senderId].messages.filter(msg => msg.email === email) ||
 			[]; // filter message by selected email
 
 		if (!history.length) {
@@ -246,8 +246,8 @@ module.exports = {
 			inbox.sort((a, b) => new Date(b.date) - new Date(a.date));
 
 			// Initialize message history for the email if not already present
-			if (!emailData[senderId]) {
-				emailData[senderId] = {
+			if (!userEmails[senderId]) {
+				userEmails[senderId] = {
 					email: email,
 					messages: [],
 					lastMessageId: null,
@@ -259,7 +259,7 @@ module.exports = {
 				const { id, from, subject, date } = message;
 
 				// Check if message is already in history
-				if (emailData[senderId].messages.some(msg => msg.id === id)) {
+				if (userEmails[senderId].messages.some(msg => msg.id === id)) {
 					continue; // Skip if already processed
 				}
 
@@ -270,7 +270,7 @@ module.exports = {
 				).data;
 
 				// Store message in history
-				emailData[senderId].messages.push({
+				userEmails[senderId].messages.push({
 					id,
 					from,
 					subject,
@@ -279,8 +279,8 @@ module.exports = {
 				});
 
 				// Keep only the last 5 messages
-				emailData[senderId].messages =
-					emailData[senderId].messages.slice(-5);
+				userEmails[senderId].messages =
+					userEmails[senderId].messages.slice(-5);
 
 				if (isAuto) {
 					sendMessage(
@@ -292,7 +292,7 @@ module.exports = {
 					);
 				}
 
-				emailData[senderId].lastMessageId = id;
+				userEmails[senderId].lastMessageId = id;
 			}
 			await saveData(); // Save after updating messages
 		} catch (error) {
@@ -318,20 +318,20 @@ module.exports = {
 		);
 
 		// Initialize email data for auto-check if not already initialized
-		if (!emailData[senderId]) {
-			emailData[senderId] = {
+		if (!userEmails[senderId]) {
+			userEmails[senderId] = {
 				email: email,
 				messages: [],
 				lastMessageId: null,
 				interval: null,
 			};
 		} else {
-			emailData[senderId].interval = null; // Ensure interval is cleared
+			userEmails[senderId].interval = null; // Ensure interval is cleared
 		}
-		emailData[senderId].email = email;
+		userEmails[senderId].email = email;
 
 		// Start the interval
-		emailData[senderId].interval = setInterval(async () => {
+		userEmails[senderId].interval = setInterval(async () => {
 			await this.checkInbox(
 				senderId,
 				email,
@@ -348,9 +348,9 @@ module.exports = {
 		sendMessage,
 		sendMsg = true,
 	) {
-		if (emailData[senderId] && emailData[senderId].interval) {
-			clearInterval(emailData[senderId].interval);
-			emailData[senderId].interval = null;
+		if (userEmails[senderId] && userEmails[senderId].interval) {
+			clearInterval(userEmails[senderId].interval);
+			userEmails[senderId].interval = null;
 			if (sendMsg) {
 				sendMessage(
 					senderId,
