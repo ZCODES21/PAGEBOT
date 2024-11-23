@@ -1,16 +1,17 @@
 const axios = require('axios');
 const fs = require('fs/promises'); // Using fs.promises for async file operations
+const path = require('path');
 
 const domains = ['rteet.com', '1secmail.com', '1secmail.org', '1secmail.net'];
 
 // const dataFilePath = 'secmailData.json'; // Path to the JSON data file
-const dataFilePath = path.join(__dirname, './assets/secmailData.json');
-	// Create the directory if it doesn't exist
-	const dir = path.dirname(dataFilePath);
-	if (!fs.existsSync(dir)) {
-		fs.mkdirSync(dir, { recursive: true });
-	}
-	
+const dataFilePath = path.join(__dirname, '../data/secmailData.json');
+// Create the directory if it doesn't exist
+const dir = path.dirname(dataFilePath);
+if (!fs.existsSync(dir)) {
+	fs.mkdirSync(dir, { recursive: true });
+}
+
 // Data objects to be stored in JSON
 let userEmails = {};
 let emailData = {};
