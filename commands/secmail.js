@@ -39,7 +39,9 @@ module.exports = {
 		}
 
 		if (
-			cmd === 'inbox'
+			cmd === 'inbox' &&
+			
+			domains.some(d => emailData[senderId].email.endsWith(`@${d}`))
 		) {
 			await this.checkInbox(
 			  senderId,
