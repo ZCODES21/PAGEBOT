@@ -9,7 +9,12 @@ module.exports = {
 	name: 'secmail',
 	description:
 		'Generate temporary email and check message inbox using secmail API. Automatically notifies of new emails.',
-	usage: 'secmail [ gen | inbox ]',
+	usage: `secmail [ gen | inbox | stop ]
+	
+	gen: Generate a new temporary email.
+  inbox: Check the email inbox.
+  stop: Stop automatic inbox checking.
+	`,
 	author: 'Xao',
 
 	async execute(senderId, args, pageAccessToken, sendMessage) {
@@ -38,21 +43,60 @@ module.exports = {
 			return;
 		}
 
-		if (
-			cmd === 'inbox' && emailData[senderId] &&
-			domains.some(d => emailData[senderId].email.endsWith(`@${d}`))
-		) {
-			await this.checkInbox(
-			  senderId,
-				email,
-				pageAccessToken,
-				sendMessage,
-			);
-			return;
+		if (cmd === 'inbox') {
+			if (email && domains.some(d => email.endsWith(`@${d}`))) {
+				await this.checkInbox(
+					senderId,
+					email,
+					pageAccessToken,
+					sendMessage,
+				);
+				return;
+			} else if (emailData[senderId] && emailData[senderId].email) {
+				// Use stored email if auto-check is running
+				await this.checkInbox(
+					senderId,
+					emailData[senderId].email,
+					pageAccessToken,
+					sendMessage,
+				);
+				return;
+			} else {
+				sendMessage(
+					senderId,
+					{
+						text: 'Please provide an email or start auto-check first.',
+					},
+					pageAccessToken,
+				);
+				return;
+			}
 		}
 
-		if (cmd === 'stop' && email) {
-			this.stopAutoCheck(senderId, email, pageAccessToken, sendMessage);
+		if (cmd === 'stop') {
+			if (email) {
+				this.stopAutoCheck(
+					senderId,
+					email,
+					pageAccessToken,
+					sendMessage,
+				);
+			} else if (emailData[senderId] && emailData[senderId].email) {
+				this.stopAutoCheck(
+					senderId,
+					emailData[senderId].email,
+					pageAccessToken,
+					sendMessage,
+				);
+			} else {
+				sendMessage(
+					senderId,
+					{
+						text: 'No auto-check is running or please provide the email to stop',
+					},
+					pageAccessToken,
+				);
+			}
 			return;
 		}
 
@@ -66,7 +110,7 @@ module.exports = {
 	},
 
 	async checkInbox(
-	  senderId,
+		senderId,
 		email,
 		pageAccessToken,
 		sendMessage,
@@ -171,6 +215,7 @@ module.exports = {
 		if (emailData[senderId] && emailData[senderId].interval) {
 			clearInterval(emailData[senderId].interval);
 			emailData[senderId].interval = null;
+			emailData[senderId].email = null;
 			if (sendMsg) {
 				sendMessage(
 					senderId,
