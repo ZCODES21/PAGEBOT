@@ -75,9 +75,9 @@ async function handleMessage(event, pageAccessToken) {
         }, pageAccessToken);
       }
     } else {
-      let helpMessage = "Available commands:\n\n";
+      let helpMessage = "COMMAND LISTS:\n\n";
       for (const [commandName, command] of commands) {
-        helpMessage += `CMND NAME: ${command.name}\nAUTHOR: ${command.author}\nDESCRIP: ${command.description}\nUSAGE: ${command.usage}\n\n`;
+        helpMessage += `» ${command.name}\nAuthor: ${command.author}\nDescription: ${command.description}\nUsage: ${command.usage}\n\n`;
       }
       sendMessage(senderId, {
         text: helpMessage

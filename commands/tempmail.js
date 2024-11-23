@@ -1,20 +1,18 @@
 const axios = require('axios');
 
-const domains = [
-	'rteet.com',
-	'1secmail.com',
-	'1secmail.org',
-	'1secmail.net',
-];
+const domains = ['rteet.com', '1secmail.com', '1secmail.org', '1secmail.net'];
 
-// Store emails and their last message IDs
+// Store emails, their message history, and auto-check status
 const emailData = {};
+
+// Store previous emails for each user
+const userEmails = {};
 
 module.exports = {
 	name: 'secmail',
 	description:
-		'Generate temporary email and check message inbox using secmail API. Automatically notifies of new emails.',
-	usage: 'secmail [gen | inbox <email> | stop <email>]',
+		'Generate temporary email and view message history. Automatically notifies of new emails.',
+	usage: 'secmail [ gen | emails | inbox <email> | stop <email> ]',
 	author: 'Xao',
 
 	async execute(senderId, args, pageAccessToken, sendMessage) {
@@ -33,6 +31,12 @@ module.exports = {
 				pageAccessToken,
 			);
 
+			// Store generated email for the user
+			if (!userEmails[senderId]) {
+				userEmails[senderId] = [];
+			}
+			userEmails[senderId].push(generatedEmail);
+
 			// Start auto-check for generated email
 			this.startAutoCheck(
 				senderId,
@@ -43,17 +47,18 @@ module.exports = {
 			return;
 		}
 
-		if (
-			cmd === 'inbox' &&
-			email &&
-			domains.some(d => email.endsWith(`@${d}`))
-		) {
-			await this.checkInbox(
+		if (cmd === 'inbox' && email) {
+			await this.viewEmailHistory(
 				senderId,
 				email,
 				pageAccessToken,
 				sendMessage,
 			);
+			return;
+		}
+
+		if (cmd === 'emails') {
+			this.showPreviousEmails(senderId, pageAccessToken, sendMessage);
 			return;
 		}
 
@@ -69,6 +74,39 @@ module.exports = {
 			},
 			pageAccessToken,
 		);
+	},
+
+	async viewEmailHistory(senderId, email, pageAccessToken, sendMessage) {
+		if (!emailData[senderId] || emailData[senderId].email !== email) {
+			sendMessage(
+				senderId,
+				{ text: 'Email not found in history or no history available.' },
+				pageAccessToken,
+			);
+			return;
+		}
+
+		const history = emailData[senderId].messages || [];
+
+		if (!history.length) {
+			sendMessage(
+				senderId,
+				{ text: 'No messages found for this email.' },
+				pageAccessToken,
+			);
+			return;
+		}
+
+		let historyMessage = `EMAIL HISTORY FOR ${email}:\n\n`;
+		history.forEach((message, index) => {
+			historyMessage += `${index + 1}. From: ${
+				message.from
+			}\n   Subject: ${message.subject}\n   Date: ${
+				message.date
+			}\n   Content: ${message.textBody}\n\n`;
+		});
+
+		sendMessage(senderId, { text: historyMessage }, pageAccessToken);
 	},
 
 	async checkInbox(
@@ -100,33 +138,51 @@ module.exports = {
 			// Sort inbox by date, newest first
 			inbox.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-			const latestMessage = inbox[0];
-			const { id, from, subject, date } = latestMessage;
-
-			if (
-				emailData[senderId] &&
-				emailData[senderId].lastMessageId === id
-			) {
-				return; // No new messages
+			// Initialize message history for the email if not already present
+			if (!emailData[senderId]) {
+				emailData[senderId] = {
+					email: email,
+					messages: [],
+					lastMessageId: null,
+					interval: null,
+				};
 			}
 
-			if (emailData[senderId]) {
+			for (const message of inbox) {
+				const { id, from, subject, date } = message;
+
+				// Check if message is already in history
+				if (emailData[senderId].messages.some(msg => msg.id === id)) {
+					continue; // Skip if already processed
+				}
+
+				const { textBody } = (
+					await axios.get(
+						`https://www.1secmail.com/api/v1/?action=readMessage&login=${username}&domain=${domain}&id=${id}`,
+					)
+				).data;
+
+				// Store message in history
+				emailData[senderId].messages.push({
+					id,
+					from,
+					subject,
+					date,
+					textBody,
+				});
+
+				if (isAuto) {
+					sendMessage(
+						senderId,
+						{
+							text: `NEW EMAIL RECEIVED!:\nFrom: ${from}\nSubject: ${subject}\nDate: ${date}\n\n${textBody}`,
+						},
+						pageAccessToken,
+					);
+				}
+
 				emailData[senderId].lastMessageId = id;
 			}
-
-			const { textBody } = (
-				await axios.get(
-					`https://www.1secmail.com/api/v1/?action=readMessage&login=${username}&domain=${domain}&id=${id}`,
-				)
-			).data;
-
-			sendMessage(
-				senderId,
-				{
-					text: `📮 | NEW EMAIL:\nFrom: ${from}\nSubject: ${subject}\nDate: ${date}\n\nContent:\n${textBody}`,
-				},
-				pageAccessToken,
-			);
 		} catch (error) {
 			console.error('Error in checkInbox:', error);
 			if (!isAuto) {
@@ -149,12 +205,18 @@ module.exports = {
 			false,
 		);
 
-		// Initialize email data for auto-check
-		emailData[senderId] = {
-			email: email,
-			lastMessageId: null,
-			interval: null,
-		};
+		// Initialize email data for auto-check if not already initialized
+		if (!emailData[senderId]) {
+			emailData[senderId] = {
+				email: email,
+				messages: [],
+				lastMessageId: null,
+				interval: null,
+			};
+		} else {
+			emailData[senderId].interval = null; // Ensure interval is cleared
+		}
+		emailData[senderId].email = email;
 
 		// Start the interval
 		emailData[senderId].interval = setInterval(async () => {
@@ -191,5 +253,27 @@ module.exports = {
 				pageAccessToken,
 			);
 		}
+	},
+
+	showPreviousEmails(senderId, pageAccessToken, sendMessage) {
+		if (!userEmails[senderId] || userEmails[senderId].length === 0) {
+			sendMessage(
+				senderId,
+				{ text: 'No previous emails generated.' },
+				pageAccessToken,
+			);
+			return;
+		}
+
+		const previousEmails = userEmails[senderId]
+			.map((email, index) => `${index + 1}. ${email}`)
+			.join('\n');
+		sendMessage(
+			senderId,
+			{
+				text: `PREVIOUS GENERATED EMAILS:\n\n${previousEmails}`,
+			},
+			pageAccessToken,
+		);
 	},
 };
