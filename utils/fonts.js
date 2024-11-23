@@ -73,3 +73,5 @@ function fontChanger(text) {
 
 	return text.replace(changeFonts && _changeFonts, (match, p1) => `${fontOutput(p1)}`);
 }
+
+module.exports = { fontChanger };

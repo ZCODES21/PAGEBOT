@@ -1,18 +1,69 @@
 const axios = require('axios');
+const fs = require('fs/promises'); // Using fs.promises for async file operations
 
 const domains = ['rteet.com', '1secmail.com', '1secmail.org', '1secmail.net'];
 
-// Store emails, their message history, and auto-check status
-const emailData = {};
+// const dataFilePath = 'secmailData.json'; // Path to the JSON data file
+const dataFilePath = path.join(__dirname, './assets/secmailData.json');
+	// Create the directory if it doesn't exist
+	const dir = path.dirname(dataFilePath);
+	if (!fs.existsSync(dir)) {
+		fs.mkdirSync(dir, { recursive: true });
+	}
+	
+// Data objects to be stored in JSON
+let userEmails = {};
+let emailData = {};
 
-// Store previous emails for each user
-const userEmails = {};
+// Function to load data from JSON file
+async function loadData() {
+	try {
+		const data = await fs.readFile(dataFilePath, 'utf8');
+		const parsedData = JSON.parse(data);
+		userEmails = parsedData.userEmails || {};
+		emailData = parsedData.emailData || {};
+	} catch (error) {
+		if (error.code === 'ENOENT') {
+			console.log('Data file not found, starting with empty data.');
+			userEmails = {};
+			emailData = {};
+		} else {
+			console.error('Error loading data from file:', error);
+			userEmails = {};
+			emailData = {};
+		}
+	}
+}
+
+// Function to save data to JSON file
+async function saveData() {
+	try {
+		const data = JSON.stringify({ userEmails, emailData }, null, 2);
+		await fs.writeFile(dataFilePath, data, 'utf8');
+	} catch (error) {
+		console.error('Error saving data to file:', error);
+	}
+}
+
+// Load data on startup
+loadData();
+
+// Save data before exit
+process.on('exit', () => {
+	saveData().then(() => console.log('Data saved on exit.'));
+});
+
+process.on('SIGINT', async () => {
+	await saveData();
+	console.log('Data saved on SIGINT. Exiting...');
+	process.exit(0);
+});
 
 module.exports = {
 	name: 'secmail',
 	description:
 		'Generate temporary email and view message history. Automatically notifies of new emails.',
-	usage: 'secmail [ gen | emails | inbox <email> | stop <email> ]',
+	usage: 'secmail [gen | history <email> | previous | stop <email>]',
 	author: 'Xao',
 
 	async execute(senderId, args, pageAccessToken, sendMessage) {
@@ -36,6 +87,7 @@ module.exports = {
 				userEmails[senderId] = [];
 			}
 			userEmails[senderId].push(generatedEmail);
+			await saveData();
 
 			// Start auto-check for generated email
 			this.startAutoCheck(
@@ -47,7 +99,7 @@ module.exports = {
 			return;
 		}
 
-		if (cmd === 'inbox' && email) {
+		if (cmd === 'history' && email) {
 			await this.viewEmailHistory(
 				senderId,
 				email,
@@ -57,7 +109,7 @@ module.exports = {
 			return;
 		}
 
-		if (cmd === 'emails') {
+		if (cmd === 'previous') {
 			this.showPreviousEmails(senderId, pageAccessToken, sendMessage);
 			return;
 		}
@@ -97,8 +149,10 @@ module.exports = {
 			return;
 		}
 
-		let historyMessage = `EMAIL HISTORY FOR ${email}:\n\n`;
-		history.forEach((message, index) => {
+		let historyMessage = `📧 | LAST 5 MESSAGES FOR ${email}:\n\n`;
+		// Display only the last 5 messages
+		const lastFiveMessages = history.slice(-5);
+		lastFiveMessages.forEach((message, index) => {
 			historyMessage += `${index + 1}. From: ${
 				message.from
 			}\n   Subject: ${message.subject}\n   Date: ${
@@ -171,11 +225,15 @@ module.exports = {
 					textBody,
 				});
 
+				// Keep only the last 5 messages
+				emailData[senderId].messages =
+					emailData[senderId].messages.slice(-5);
+
 				if (isAuto) {
 					sendMessage(
 						senderId,
 						{
-							text: `NEW EMAIL RECEIVED!:\nFrom: ${from}\nSubject: ${subject}\nDate: ${date}\n\n${textBody}`,
+							text: `📮 | NEW EMAIL:\nFrom: ${from}\nSubject: ${subject}\nDate: ${date}\n\nContent:\n${textBody}`,
 						},
 						pageAccessToken,
 					);
@@ -183,6 +241,7 @@ module.exports = {
 
 				emailData[senderId].lastMessageId = id;
 			}
+			await saveData(); // Save after updating messages
 		} catch (error) {
 			console.error('Error in checkInbox:', error);
 			if (!isAuto) {
@@ -271,7 +330,7 @@ module.exports = {
 		sendMessage(
 			senderId,
 			{
-				text: `PREVIOUS GENERATED EMAILS:\n\n${previousEmails}`,
+				text: `Previous emails:\n${previousEmails}`,
 			},
 			pageAccessToken,
 		);

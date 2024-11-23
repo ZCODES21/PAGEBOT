@@ -10,24 +10,24 @@
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"@y2pheq/xaoai": "^x.x.x"
+		"@y2pheq/xaoai": "latest"
 	},
 	"dependencies": {
-		"@types/node": "^x.x.x",
-		"axios": "^x.x.x",
-		"body-parser": "^x.x.x",
-		"express": "^x.x.x",
-		"node-fetch": "^x.x.x",
-		"request": "^x.x.x",
-		"winston": "^x.x.x",
-		"moment-timezone": "^x.x.x",
-		"moment": "^x.x.x",
-		"path": "^x.x.x",
-		"promises": "^x.x.x",
-		"form-data": "^x.x.x",
-		"fs": "^x.x.x"
+		"@types/node": "latest",
+		"axios": "latest",
+		"body-parser": "latest",
+		"express": "latest",
+		"node-fetch": "latest",
+		"request": "latest",
+		"winston": "latest",
+		"moment-timezone": "latest",
+		"moment": "latest",
+		"path": "latest",
+		"promises": "latest",
+		"form-data": "latest",
+		"fs": "latest"
 	},
 	"engines": {
-		"node": "20.x"
+		"node": "latest"
 	}
 }
