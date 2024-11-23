@@ -4,7 +4,7 @@ const path = require('path');
 
 const domains = ['rteet.com', '1secmail.com', '1secmail.org', '1secmail.net'];
 
-// const dataFilePath = 'secmailData.json'; // Path to the JSON data file
+// const XAO_FILE = 'secmailData.json'; // Path to the JSON data file
 const XAO_FILE = path.join(__dirname, '../data/secmailData.json');
 // Create the directory if it doesn't exist
 const dir = path.dirname(XAO_FILE);
@@ -45,7 +45,7 @@ let emailData = {};
 // Function to load data from JSON file
 async function loadData() {
 	try {
-		const data = await fs.readFile(dataFilePath, 'utf8');
+		const data = await fs.readFile(XAO_FILE, 'utf8');
 		const parsedData = JSON.parse(data);
 		userEmails = parsedData.userEmails || {};
 		emailData = parsedData.emailData || {};
@@ -66,7 +66,7 @@ async function loadData() {
 // async function SAVED_XAO(savedEmails) {
 //	try {
 // const data = JSON.stringify({ userEmails, emailData }, null, 2);
-// await fs.writeFile(dataFilePath, data, 'utf8');
+// await fs.writeFile(XAO_FILE, data, 'utf8');
 //	} catch (error) {
 //		console.error('Error saving data to file:', error);
 //	}
