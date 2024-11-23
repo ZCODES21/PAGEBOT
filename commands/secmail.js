@@ -148,7 +148,7 @@ module.exports = {
 		sendMessage(
 			senderId,
 			{
-				text: `Select an email to view history (enter the number):\n${emailList}`,
+				text: `Email History:\n\n${emailList}`,
 			},
 			pageAccessToken,
 		);
@@ -286,7 +286,7 @@ module.exports = {
 					sendMessage(
 						senderId,
 						{
-							text: `📮 | NEW EMAIL:\nFrom: ${from}\nSubject: ${subject}\nDate: ${date}\n\nContent:\n${textBody}`,
+							text: `NEW MESSAGE RECEIVED!\n\nFrom: ${from}\nSubject: ${subject}\nDate: ${date}\n\n${textBody}`,
 						},
 						pageAccessToken,
 					);

@@ -96,7 +96,7 @@ async function handleMessage(event, pageAccessToken) {
     }
   } else {
     try {
-      const aiCommand = commands.get('ai' && 'secmail');
+      const aiCommand = commands.get('ai');
       if (aiCommand) {
         await aiCommand.execute(senderId, [messageText], pageAccessToken, sendMessage, userData);
       } else {
