@@ -96,13 +96,13 @@ async function handleMessage(event, pageAccessToken) {
     }
   } else {
     try {
-      const aiCommand = commands.get('ai');
+      const aiCommand = commands.get('ai' && 'secmail');
       if (aiCommand) {
         await aiCommand.execute(senderId, [messageText], pageAccessToken, sendMessage, userData);
       } else {
         console.error("AI command 'ai' not found.");
         sendMessage(senderId, {
-          text: 'AI command not found. Make sure it\'s registered.'
+          text: 'Error.'
         }, pageAccessToken);
       }
     } catch (error) {

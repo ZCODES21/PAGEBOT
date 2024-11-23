@@ -112,7 +112,7 @@ async function sendMessage(senderId, message, pageAccessToken) {
 				'Content-Type': 'application/json',
 			},
 		});
-		console.log('Message sent successfully:', response);
+		console.log('Message sent successfully:', response.data);
 	} catch (error) {
 		console.error('Error sending message:', error.message);
 
