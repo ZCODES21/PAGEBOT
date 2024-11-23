@@ -43,7 +43,7 @@ module.exports = {
 		) {
 			await this.checkInbox(
 			  senderId,
-				emailData,
+				email,
 				pageAccessToken,
 				sendMessage,
 			);
@@ -66,7 +66,7 @@ module.exports = {
 
 	async checkInbox(
 	  senderId,
-		emailData,
+		email,
 		pageAccessToken,
 		sendMessage,
 		isAuto = false,
