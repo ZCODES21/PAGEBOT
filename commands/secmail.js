@@ -207,9 +207,9 @@ module.exports = {
 
 	async viewEmailHistory(senderId, email, pageAccessToken, sendMessage) {
 		if (
-			!userEmails[senderId] ||
-			!userEmails[senderId].messages ||
-			!userEmails[senderId].messages.find(msg => msg.email === email)
+			!emailData[senderId] ||
+			!emailData[senderId].messages ||
+			!emailData[senderId].messages.find(msg => msg.email === email)
 		) {
 			sendMessage(
 				senderId,
@@ -220,7 +220,7 @@ module.exports = {
 		}
 
 		const history =
-			userEmails[senderId].messages.filter(msg => msg.email === email) ||
+			emailData[senderId].messages.filter(msg => msg.email === email) ||
 			[]; // filter message by selected email
 
 		if (!history.length) {
