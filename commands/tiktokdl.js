@@ -18,37 +18,33 @@ module.exports = {
 
 		try {
 			const apiUrl = `https://nethwieginedev.vercel.app/api/tiktokdl?link=${prompt}`;
-			const response = await axios.get(apiUrl);
+			const {
+				data: { link, error, status },
+			} = await axios.get(apiUrl);
 
-			if (response.data.status === 'success') {
-				if (response.data.video_url.includes('.mp4')) {
+			if (status === 'success') {
+				if (link.includes('.mp4')) {
 					sendMessage(
 						senderId,
 						{
 							attachment: {
 								type: 'video',
 								payload: {
-									url: response.data.video_url,
+									url: link,
 								},
 							},
 						},
 						pageAccessToken,
 					);
 				} else {
-					sendMessage(
-						senderId,
-						{ text: 'No video found for this link' },
-						pageAccessToken,
-					);
+					sendMessage(senderId, { text: link }, pageAccessToken);
 				}
 			} else {
-				console.error('API Error:', response.data.message); // Log the specific API error message
+				console.error('API Error:', error); // Log the specific API error message
 				sendMessage(
 					senderId,
 					{
-						text:
-							response.data.message ||
-							'There was an error fetching the video.',
+						text: error || 'There was an error fetching the video.',
 					},
 					pageAccessToken,
 				); //added an OR operator so if the api returns an error but with no message this will still send the default message
