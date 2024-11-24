@@ -9,7 +9,7 @@ module.exports = {
 	async execute(senderId, args, pageAccessToken, sendMessage) {
 		try {
 			// Extract the TikTok URL from the user's message
-			const userTikTokUrl = messageText.split(' ')[1]; // Assuming the command is followed by the URL
+			const userTikTokUrl = args.split(' ')[1]; // Assuming the command is followed by the URL
 			if (!userTikTokUrl) {
 				await sendMessage(senderId, {
 					text: 'Please provide a TikTok URL.',
