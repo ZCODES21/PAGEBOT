@@ -52,8 +52,19 @@ module.exports = {
 
             const uploadResponse = await axios.post(
                 `https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`,
-                formData,
-                { headers: formData.getHeaders() }
+              {
+                  recipient: { id: senderId }, // Add recipient ID here
+                  message: {
+                      attachment: {
+                          type: 'video',
+                          payload: {
+                              is_reusable: true // this will allow you to reuse the video
+                          }
+                      }
+                  },
+                  filedata:  formData //sending the form data
+              },
+                { headers: formData.getHeaders({})}  // VERY IMPORTANT to send correct headers
             );
 
             if (uploadResponse.status === 200) {
