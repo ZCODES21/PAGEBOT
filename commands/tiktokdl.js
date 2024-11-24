@@ -23,7 +23,7 @@ module.exports = {
 			const apiUrl = `https://nethwieginedev.vercel.app/api/tiktokdl?link=${prompt}`;
 			const response = await axios.get(apiUrl);
 
-			if (response.data.success === "true") {
+			if (response.data.success) {
 				const videoUrl = response.data.link;
 				const videoPath = path.join(__dirname, uuidv4() + '.mp4');
 
