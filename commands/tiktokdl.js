@@ -1,9 +1,12 @@
-const axios = require('axios'); // Import axios for making API requests
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid'); // For generating unique filenames
 
 module.exports = {
 	name: 'tiktokdl',
 	description: 'Download TikTok videos',
-	usage: 'tiktokdl <TikTok link>',
+	usage: 'tiktokdl <tiktok_link>',
 	author: 'KALIX AO',
 	async execute(senderId, args, pageAccessToken, sendMessage) {
 		const prompt = args.join(' ');
@@ -18,44 +21,43 @@ module.exports = {
 
 		try {
 			const apiUrl = `https://nethwieginedev.vercel.app/api/tiktokdl?link=${prompt}`;
-			const {
-				data: { link, error, status },
-			} = await axios.get(apiUrl);
+			const response = await axios.get(apiUrl);
 
-			if (status === 'true') {
-				if (link.includes('.mp4')) {
-					sendMessage(
-						senderId,
-						{
-							attachment: {
-								type: 'video',
-								payload: {
-									url: link,
-								},
+			if (response.data.success === "true") {
+				const videoUrl = response.data.link;
+				const videoPath = path.join(__dirname, uuidv4() + '.mp4');
+
+				const videoResponse = await axios.get(videoUrl, {
+					responseType: 'stream',
+				}); //important
+				//pipe the result stream into a file on disc
+				videoResponse.data
+					.pipe(fs.createWriteStream(videoPath))
+					.on('finish', () => {
+						sendMessage(
+							senderId,
+							{
+								text: `✨`,
+								filedata: fs.createReadStream(videoPath),
 							},
-						},
-						pageAccessToken,
-					);
-				} else {
-					sendMessage(senderId, { text: link }, pageAccessToken);
-				}
+							pageAccessToken,
+						);
+						fs.unlinkSync(videoPath); //delete after sending
+					});
 			} else {
-				console.error('API Error:', error); // Log the specific API error message
 				sendMessage(
 					senderId,
 					{
-						text: error || 'There was an error fetching the video.',
+						text: 'Could not download the video. Please try again later or use a different link',
 					},
 					pageAccessToken,
-				); //added an OR operator so if the api returns an error but with no message this will still send the default message
+				);
 			}
 		} catch (error) {
 			console.error('Error:', error);
 			sendMessage(
 				senderId,
-				{
-					text: 'There was an error downloading the video.',
-				},
+				{ text: 'There was an error downloading the video.' },
 				pageAccessToken,
 			);
 		}
@@ -63,8 +65,8 @@ module.exports = {
 };
 
 function isValidTikTokLink(link) {
-	// Improved regular expression to handle various TikTok link formats
 	const tiktokRegex =
-		/^(https?:\/\/)?(www\.)?(vt\.|vm\.|m\.)?tiktok\.com\/[A-Za-z0-9-_@]+\/?/;
+		/^(https?:\/\/)?(www\.)?(vt\.tiktok\.com|tiktok\.com)\/.*$/;
+	//const tiktokRegex = /^(https?:\/\/)?(www\.)?tiktok\.com\/[@\w\.]+\/video\/(\d+)\/?$/; // More specific regex
 	return tiktokRegex.test(link);
 }

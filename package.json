@@ -25,7 +25,8 @@
 		"path": "latest",
 		"promises": "latest",
 		"form-data": "latest",
-		"fs": "latest"
+		"fs": "latest",
+		"uuud": "latest"
 	},
 	"engines": {
 		"node": "20.x"
