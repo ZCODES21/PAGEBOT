@@ -1,88 +1,75 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid'); // For generating unique filenames
+const cooldown = require('../utils/cooldown'); // Import cooldown module
 
+// Define and export module
 module.exports = {
-	name: 'tiktokdl',
-	description: 'Download TikTok videos',
-	usage: 'tiktokdl <tiktok_link>',
-	author: 'KALIX AO',
-	async execute(senderId, args, pageAccessToken, sendMessage) {
-		const prompt = args.join(' ');
+  // Metadata for the command
+  name: 'tiktokdl',  // Command name
+  description: 'Download tiktok videos',  // Description
+  usage: 'tiktokdl [link]',  // Usage
+  author: 'KALIX AO',  // Author of the command
 
-		if (!isValidTikTokLink(prompt)) {
-			return sendMessage(
-				senderId,
-				{ text: 'Invalid TikTok link.' },
-				pageAccessToken,
-			);
-		}
+  // Main function that executes the command
+  async execute(senderId, args, pageAccessToken, sendMessage) {
+    // Sanitize the prompt (crucial for security)
+    const prompt = args.join(' ');
+    const apiUrl = `https://nethwieginedev.vercel.app/api/tiktokdl?link=${prompt}`;
 
-		try {
-			const apiUrl = `https://nethwieginedev.vercel.app/api/tiktokdl?link=${prompt}`;
-			const response = await axios.get(apiUrl);
 
-			if (response.data.success) {
-				const videoUrl = response.data.link;
-				const videoPath = path.join(
-					__dirname,
-					'../data/' + uuidv4() + '.mp4',
-				);
+      // Check cooldown for the senderId
+      if (cooldown.checkCooldown(senderId, 6)) {
+        await sendMessage(senderId, { text: 'Please wait 6 seconds before using this command again.' }, pageAccessToken);
+        return; // Exit if sender is on cooldown
+      }
+      
+      
+    // Notify user that the image is being generated
+    await sendMessage(senderId, { text: 'downloading videos...' }, pageAccessToken);
 
-				sendMessage(
-					senderId,
-					{
-						attachment: {
-							type: 'video',
-							payload: {
-								url: videoUrl,
-							},
-						},
-					},
-					pageAccessToken,
-				);
+    try {
+      // Send the generated image to the user as an attachment
+      const response = await axios.get(apiUrl, {
+        responseType: 'stream'
+      });
 
-				const videoResponse = await axios.get(videoUrl, {
-					responseType: 'stream',
-				}); //important
-				//pipe the result stream into a file on disc
-				videoResponse.data
-					.pipe(fs.createWriteStream(videoPath))
-					.on('finish', () => {
-						sendMessage(
-							senderId,
-							{
-								text: `✨`,
-								filedata: fs.createReadStream(videoPath),
-							},
-							pageAccessToken,
-						);
-						fs.unlinkSync(videoPath); //delete after sending
-					});
-			} else {
-				sendMessage(
-					senderId,
-					{
-						text: 'Could not download the video. Please try again later or use a different link',
-					},
-					pageAccessToken,
-				);
-			}
-		} catch (error) {
-			console.error('Error:', error);
-			sendMessage(
-				senderId,
-				{ text: 'There was an error downloading the video.' },
-				pageAccessToken,
-			);
-		}
-	},
+      // Check if the API call was successful
+      if (response.status !== 200) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
+      // Stream the image as an attachment instead of saving it locally
+     await sendMessage(senderId, {
+        attachment: {
+          type: 'video',
+          payload: {
+            url: apiUrl  // URL of the generated image
+          }
+        }
+      }, pageAccessToken);
+
+        // Importantly, add the sender to the cooldown after successful execution.
+        await cooldown.addCooldown(senderId, 6);
+
+
+    } catch (error) {
+      console.error('Error downloading video:', error);
+
+      //Handle specific error types for better feedback
+      if (error.response && error.response.status === 400) { // Example handling for bad request
+          await sendMessage(senderId, {
+              text: 'Invalid prompt. Please use a valid link.'
+          }, pageAccessToken);
+      } else {
+          await sendMessage(senderId, {
+              text: 'An error occurred while downloading the video. Please try again later.'
+          }, pageAccessToken);
+      }
+    }
+  }
 };
 
-function isValidTikTokLink(link) {
-	const tiktokRegex =
-		/^(https?:\/\/)?(www\.)?(vt\.tiktok\.com|tiktok\.com)\/.*$/;
-	//const tiktokRegex = /^(https?:\/\/)?(www\.)?tiktok\.com\/[@\w\.]+\/video\/(\d+)\/?$/; // More specific regex
-	return tiktokRegex.test(link);
+// Helper function for sanitizing the prompt
+function sanitizePrompt(prompt) {
+  // Basic sanitization:  Only alphanumeric characters and spaces
+  return /^[a-zA-Z0-9\s]+$/.test(prompt) ? prompt : null;
 }
