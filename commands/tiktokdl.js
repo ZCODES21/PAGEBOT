@@ -25,7 +25,23 @@ module.exports = {
 
 			if (response.data.success) {
 				const videoUrl = response.data.link;
-				const videoPath = path.join(__dirname, uuidv4() + '.mp4');
+				const videoPath = path.join(
+					__dirname,
+					'../data/' + uuidv4() + '.mp4',
+				);
+
+				sendMessage(
+					senderId,
+					{
+						attachment: {
+							type: 'video',
+							payload: {
+								url: videoUrl,
+							},
+						},
+					},
+					pageAccessToken,
+				);
 
 				const videoResponse = await axios.get(videoUrl, {
 					responseType: 'stream',
