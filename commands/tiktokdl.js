@@ -1,4 +1,4 @@
-const api = require('../jubiar-pagebot-api/sendmessage');
+//const api = require('../jubiar-pagebot-api/sendmessage');
 const axios = require('axios'); // Make sure axios is installed for API requests
 
 module.exports = {
