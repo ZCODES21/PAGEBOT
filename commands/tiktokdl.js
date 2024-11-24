@@ -22,7 +22,7 @@ module.exports = {
 				data: { link, error, status },
 			} = await axios.get(apiUrl);
 
-			if (status === 'success') {
+			if (status === 'true') {
 				if (link.includes('.mp4')) {
 					sendMessage(
 						senderId,
