@@ -43,13 +43,9 @@ module.exports = {
 				try {
 					await sendMessage(senderId, videoMessage, pageAccessToken);
 				} catch (error) {
-					if (
-						error.message.includes(
-							'Attachment size exceeds allowable limit',
-						)
-					) {
+					if (error.status === 400) {
 						// Send the video URL as a fallback
-						await sendMessage(
+						sendMessage(
 							senderId,
 							{
 								text: `The video is too large, watch it here:\n\n${videoUrl}`,
@@ -62,7 +58,7 @@ module.exports = {
 				}
 			} else {
 				// Handle case where video data is not successfully retrieved
-				await sendMessage(
+				sendMessage(
 					senderId,
 					{
 						text: 'Could not retrieve the video. Please check the URL and try again.',
