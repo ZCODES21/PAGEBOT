@@ -43,22 +43,13 @@ module.exports = {
 				try {
 					await sendMessage(senderId, videoMessage, pageAccessToken);
 				} catch (error) {
-					if (
-						error.message.includes(
-							'Attachment size exceeds allowable limit. Depending on the file, encoding can increase the size of the uploaded file. Please upload the file in chunks to avoid hitting the max file size.',
-						)
-					) {
-						// Send the video URL as a fallback
-						sendMessage(
-							senderId,
-							{
-								text: `The video is too large, watch it here:\n\n${videoUrl}`,
-							},
-							pageAccessToken,
-						);
-					} else {
-						throw error;
-					}
+					await sendMessage(
+						senderId,
+						{
+							text: `The video is too large, watch it here:\n\n${videoUrl}`,
+						},
+						pageAccessToken,
+					);
 				}
 			} else {
 				// Handle case where video data is not successfully retrieved
