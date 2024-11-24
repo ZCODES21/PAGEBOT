@@ -3,17 +3,20 @@ const axios = require('axios'); // Make sure axios is installed for API requests
 
 module.exports = {
 	name: 'ttdl', // Command keyword
-	description:
-		'Downloads TikTok video without watermark',
+	description: 'Downloads TikTok video without watermark',
 	author: 'Xao [API BY KENLIE]',
 	async execute(senderId, args, pageAccessToken, sendMessage) {
 		try {
 			// Extract the TikTok URL from the user's message
-			const userTikTokUrl = args.split(' ')[1]; // Assuming the command is followed by the URL
+			const userTikTokUrl = args.join(' '); // Assuming the command is followed by the URL
 			if (!userTikTokUrl) {
-				await sendMessage(senderId, {
-					text: 'Please provide a TikTok URL.',
-				});
+				await sendMessage(
+					senderId,
+					{
+						text: 'Please provide a TikTok URL.',
+					},
+					pageAccessToken,
+				);
 				return;
 			}
 
