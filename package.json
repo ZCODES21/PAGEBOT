@@ -26,6 +26,7 @@
 		"promises": "latest",
 		"form-data": "latest",
 		"fs": "latest",
+		"tmp": "latest",
 		"uuid": "latest"
 	},
 	"engines": {
