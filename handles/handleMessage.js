@@ -96,11 +96,11 @@ async function handleMessage(event, pageAccessToken) {
     }
   } else {
     try {
-      const aiCommand = commands.get('ai');
+      const aiCommand = commands.get('gpt');
       if (aiCommand) {
         await aiCommand.execute(senderId, [messageText], pageAccessToken, sendMessage, userData);
       } else {
-        console.error("AI command 'ai' not found.");
+        console.error("gpt command 'gpt' not found.");
         sendMessage(senderId, {
           text: 'Error.'
         }, pageAccessToken);
