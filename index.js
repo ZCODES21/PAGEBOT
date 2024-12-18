@@ -22,7 +22,7 @@ app.use(express.static(staticFolder));
 // Use environment variables if available, otherwise use defaults
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN || 'pagebot';
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN || fs.readFileSync('token.txt', 'utf8').trim();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 
 //  Robust error handling and logging.  Critically important.
